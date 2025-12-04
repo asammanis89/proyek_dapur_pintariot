@@ -8,6 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_fonts/google_fonts.dart'; // Import Font Keren
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'firebase_options.dart';
 
 // --- API KEY ---
 // ⚠️ PENTING: Jangan upload API Key ini ke GitHub publik untuk keamanan saldo
@@ -16,17 +17,9 @@ const String geminiApiKey = 'AIzaSyAlU7u6PVkwWu-gImRaVyphTvgjY718Wnc';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase Manual (Sesuai data kamu)
+  // Inisialisasi Firebase dengan konfigurasi otomatis dari firebase_options.dart
   await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: 'AIzaSyB-i5H5Zq-au1QtwLJastgrvgR21RwvWTk',
-      appId: '1:473717940748:android:86cae3c42118f0e0fac429',
-      messagingSenderId: '473717940748',
-      projectId: 'monitorapps-arfobhekel2',
-      storageBucket: 'monitorapps-arfobhekel2.firebasestorage.app',
-      // Tambahkan databaseURL jika error layar merah di Web/Android tertentu:
-      // databaseURL: 'https://monitorapps-arfobhekel2-default-rtdb.asia-southeast1.firebasedatabase.app',
-    ),
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   runApp(const MyApp());
@@ -336,7 +329,7 @@ class _DashboardTabState extends State<DashboardTab> {
     // Warna background berubah soft red jika bahaya
     Color safeBg = Theme.of(context).scaffoldBackgroundColor;
     Color dangerBg = isDark
-        ? Colors.red.shade900.withOpacity(0.3)
+        ? Colors.red.shade900.withValues(alpha: 0.3)
         : Colors.red.shade50;
 
     return Container(
@@ -395,7 +388,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.purple.withOpacity(0.3),
+                    color: Colors.purple.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 5),
                   ),
@@ -444,7 +437,7 @@ class _DashboardTabState extends State<DashboardTab> {
                       onPressed: isAiLoading ? null : _askGemini,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark
-                            ? Colors.white.withOpacity(0.1)
+                            ? Colors.white.withValues(alpha: 0.1)
                             : Colors.white,
                         foregroundColor: isDark ? Colors.white : Colors.purple,
                         elevation: 0,
@@ -499,7 +492,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                   ),
                 ],
@@ -526,7 +519,7 @@ class _DashboardTabState extends State<DashboardTab> {
                               borderData: FlBorderData(
                                 show: true,
                                 border: Border.all(
-                                  color: Colors.grey.withOpacity(0.2),
+                                  color: Colors.grey.withValues(alpha: 0.2),
                                 ),
                               ),
                               lineBarsData: [
@@ -538,7 +531,7 @@ class _DashboardTabState extends State<DashboardTab> {
                                   dotData: const FlDotData(show: false),
                                   belowBarData: BarAreaData(
                                     show: true,
-                                    color: Colors.blue.withOpacity(0.1),
+                                    color: Colors.blue.withValues(alpha: 0.1),
                                   ),
                                 ),
                                 LineChartBarData(
@@ -574,7 +567,7 @@ class _DashboardTabState extends State<DashboardTab> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10),
         ],
       ),
       child: Column(
