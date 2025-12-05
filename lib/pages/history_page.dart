@@ -19,42 +19,41 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-          child: Row(
-            children: [
-              const Text('Filter:'),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('All'),
-                selected: _filter == 'all',
-                onSelected: (_) => setState(() => _filter = 'all'),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Gas'),
-                selected: _filter == 'gas',
-                onSelected: (_) => setState(() => _filter = 'gas'),
-              ),
-              const SizedBox(width: 8),
-              ChoiceChip(
-                label: const Text('Temperature'),
-                selected: _filter == 'temperature',
-                onSelected: (_) => setState(() => _filter = 'temperature'),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: 'Export to PDF',
-                icon: const Icon(Icons.picture_as_pdf),
-                onPressed: _exportLogsToPdf,
-              ),
-              const Spacer(),
-            ],
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                const Text('Filter:'),
+                ChoiceChip(
+                  label: const Text('All'),
+                  selected: _filter == 'all',
+                  onSelected: (_) => setState(() => _filter = 'all'),
+                ),
+                ChoiceChip(
+                  label: const Text('Gas'),
+                  selected: _filter == 'gas',
+                  onSelected: (_) => setState(() => _filter = 'gas'),
+                ),
+                ChoiceChip(
+                  label: const Text('Suhu'),
+                  selected: _filter == 'temperature',
+                  onSelected: (_) => setState(() => _filter = 'temperature'),
+                ),
+                IconButton(
+                  tooltip: 'Export to PDF',
+                  icon: const Icon(Icons.picture_as_pdf),
+                  onPressed: _exportLogsToPdf,
+                ),
+              ],
+            ),
           ),
-        ),
-        Expanded(
+          Expanded(
           child: StreamBuilder<DatabaseEvent>(
             stream: _logsRef.orderByChild('datetime').onValue,
             builder: (context, snapshot) {
@@ -95,7 +94,7 @@ class _HistoryPageState extends State<HistoryPage> {
               }).toList();
 
               if (filtered.isEmpty) {
-                return Center(child: Text('No logs for selected filter.'));
+                return const Center(child: Text('No logs for selected filter.'));
               }
 
               return ListView.builder(
@@ -109,7 +108,14 @@ class _HistoryPageState extends State<HistoryPage> {
             },
           ),
         ),
-      ],
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _deleteAllLogs,
+        backgroundColor: Colors.red,
+        tooltip: 'Hapus semua riwayat',
+        child: const Icon(Icons.delete),
+      ),
     );
   }
 
@@ -124,6 +130,7 @@ class _HistoryPageState extends State<HistoryPage> {
       );
 
       final dbSnap = await _logsRef.get();
+      if (!mounted) return;
       if (!dbSnap.exists || dbSnap.value == null) {
         Navigator.of(context).pop();
         scaffold.showSnackBar(const SnackBar(content: Text('No logs to export')));
@@ -158,15 +165,15 @@ class _HistoryPageState extends State<HistoryPage> {
           pageFormat: PdfPageFormat.a4,
           build: (pw.Context ctx) {
             return [
-              pw.Header(level: 0, child: pw.Text('Dapur Pintar - Logs', style: pw.TextStyle(fontSize: 18))),
+              pw.Header(level: 0, child: pw.Text('Dapur Pintar - Logs', style: const pw.TextStyle(fontSize: 18))),
               pw.SizedBox(height: 8),
-              pw.Table.fromTextArray(
+              pw.TableHelper.fromTextArray(
                 headers: headers,
                 data: dataRows,
                 headerStyle: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
                 cellAlignment: pw.Alignment.centerLeft,
-                cellStyle: pw.TextStyle(fontSize: 11),
+                cellStyle: const pw.TextStyle(fontSize: 11),
                 columnWidths: {
                   0: const pw.FixedColumnWidth(70), // date
                   1: const pw.FixedColumnWidth(60), // time
@@ -181,6 +188,7 @@ class _HistoryPageState extends State<HistoryPage> {
       );
 
       final Uint8List bytes = await pdf.save();
+      if (!mounted) return;
       Navigator.of(context).pop(); // close progress
 
       final now = DateTime.now();
@@ -188,6 +196,7 @@ class _HistoryPageState extends State<HistoryPage> {
 
       await Printing.sharePdf(bytes: bytes, filename: filename);
     } catch (e) {
+      if (!mounted) return;
       Navigator.of(context).pop();
       final scaffold = ScaffoldMessenger.of(context);
       scaffold.showSnackBar(SnackBar(content: Text('Failed to export PDF: $e')));
@@ -196,14 +205,49 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Removed _buildPdfLogItem: using table layout instead.
 
+  Future<void> _deleteAllLogs() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus semua riwayat?'),
+        content: const Text('Yakin ingin menghapus semua log riwayat? Tindakan ini tidak dapat dibatalkan.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Batal')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Hapus')),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    if (!mounted) return;
+
+    final scaffold = ScaffoldMessenger.of(context);
+    try {
+      // show progress
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      await _logsRef.remove();
+
+      if (!mounted) return;
+      Navigator.of(context).pop(); // close progress
+      scaffold.showSnackBar(const SnackBar(content: Text('Semua riwayat berhasil dihapus')));
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      scaffold.showSnackBar(SnackBar(content: Text('Gagal menghapus riwayat: $e')));
+    }
+  }
+
   Widget _buildLogCard(BuildContext context, Map<dynamic, dynamic> item) {
     final reason = item['reason']?.toString() ?? 'unknown';
     final description = item['description']?.toString() ?? '';
     final date = item['date']?.toString() ?? '';
     final time = item['time']?.toString() ?? '';
-    final detected = item['detected_value']?.toString() ?? '';
-    final suhu = item['suhu']?.toString() ?? '';
-    final gas = item['gas']?.toString() ?? '';
+
 
     Color badgeColor;
     IconData badgeIcon;
@@ -226,7 +270,7 @@ class _HistoryPageState extends State<HistoryPage> {
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: badgeColor.withOpacity(0.12),
+          backgroundColor: badgeColor.withValues(alpha: 0.12),
           child: Icon(badgeIcon, color: badgeColor),
         ),
         title: Text(description, style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -236,22 +280,16 @@ class _HistoryPageState extends State<HistoryPage> {
             const SizedBox(height: 6),
             Text('$date • $time'),
             const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: badgeColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(badgeText, style: TextStyle(color: badgeColor, fontSize: 12)),
-                ),
-                Text('Value: $detected', style: const TextStyle(fontSize: 12)),
-                Text('S: $suhu', style: const TextStyle(fontSize: 12)),
-                Text('G: $gas', style: const TextStyle(fontSize: 12)),
-              ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: badgeColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                badgeText,
+                style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.w500),
+              ),
             ),
           ],
         ),
@@ -289,8 +327,8 @@ class _HistoryPageState extends State<HistoryPage> {
               Text('Waktu: $time'),
               const SizedBox(height: 8),
               Text('Peringatan: $reason'),
-              Text('Suhu: $suhu'),
-              Text('Gas: $gas'),
+              Text('Suhu: $suhu °C'),
+              Text('Gas: $gas PPM'),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,

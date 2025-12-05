@@ -253,7 +253,7 @@ class _DashboardTabState extends State<DashboardTab> {
     }
     // 1. Notifikasi
     if (fiturNotifikasi) {
-      final AndroidNotificationDetails androidDetails =
+      const androidDetails =
           AndroidNotificationDetails(
         'danger_channel',
         'Bahaya Dapur',
@@ -276,7 +276,7 @@ class _DashboardTabState extends State<DashboardTab> {
         0,
         notifTitle,
         notifBody,
-        NotificationDetails(android: androidDetails),
+        const NotificationDetails(android: androidDetails),
       );
     }
 
@@ -478,11 +478,11 @@ class _DashboardTabState extends State<DashboardTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      const Row(
                         children: [
                           Icon(Icons.notifications, color: Colors.blue),
-                          const SizedBox(width: 10),
-                          const Text('Notifikasi'),
+                          SizedBox(width: 10),
+                          Text('Notifikasi'),
                         ],
                       ),
                       Switch(
@@ -501,11 +501,11 @@ class _DashboardTabState extends State<DashboardTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      const Row(
                         children: [
                           Icon(Icons.record_voice_over, color: Colors.purple),
-                          const SizedBox(width: 10),
-                          const Text('Suara Robot'),
+                          SizedBox(width: 10),
+                          Text('Suara Robot'),
                         ],
                       ),
                       Switch(
@@ -524,11 +524,11 @@ class _DashboardTabState extends State<DashboardTab> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
+                      const Row(
                         children: [
                           Icon(Icons.volume_up, color: Colors.orange),
-                          const SizedBox(width: 10),
-                          const Text('Sirine Audio'),
+                          SizedBox(width: 10),
+                          Text('Sirine Audio'),
                         ],
                       ),
                       Switch(
