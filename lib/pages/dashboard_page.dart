@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../main.dart'; // Import untuk geminiApiKey dan _themeNotifier
 
 // --- DASHBOARD TAB ---
@@ -55,10 +56,27 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   void initState() {
     super.initState();
+    _loadPreferences();
     _initNotifications();
     _initTts();
     _initGemini();
     _initListeners();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      fiturNotifikasi = prefs.getBool('fiturNotifikasi') ?? true;
+      fiturSuaraRobot = prefs.getBool('fiturSuaraRobot') ?? true;
+      fiturAlarmSuara = prefs.getBool('fiturAlarmSuara') ?? true;
+    });
+  }
+
+  Future<void> _savePreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('fiturNotifikasi', fiturNotifikasi);
+    await prefs.setBool('fiturSuaraRobot', fiturSuaraRobot);
+    await prefs.setBool('fiturAlarmSuara', fiturAlarmSuara);
   }
 
   void _initGemini() {
@@ -190,7 +208,9 @@ class _DashboardTabState extends State<DashboardTab> {
     if (gasVal > batasBahayaGas || tempVal >= batasBahayaSuhu) {
       if (!isDangerMode) {
         isDangerMode = true; // Masuk mode bahaya
-        _triggerDangerProtocol(gasVal > batasBahayaGas ? 'gas' : 'temperature');
+        final String reason = gasVal > batasBahayaGas ? 'gas' : 'temperature';
+        final double detectedValue = reason == 'gas' ? gasVal : tempVal;
+        _triggerDangerProtocol(reason: reason, value: detectedValue);
       }
     } else {
       if (isDangerMode) {
@@ -202,7 +222,35 @@ class _DashboardTabState extends State<DashboardTab> {
     }
   }
 
-  void _triggerDangerProtocol([String reason = 'unknown']) async {
+  void _triggerDangerProtocol({String reason = 'unknown', double value = 0}) async {
+    // Record the first occurrence in the Realtime Database logs
+    try {
+      final now = DateTime.now().toLocal();
+      final date = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final time = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+
+      final description = reason == 'temperature'
+          ? 'Suhu melebihi ambang (>= $batasBahayaSuhu °C)'
+          : reason == 'gas'
+              ? 'Kadar gas melebihi ambang (>$batasBahayaGas PPM)'
+              : 'Ancaman terdeteksi di dapur.';
+
+      await _dbRef.child('logs').push().set({
+        'datetime': now.toIso8601String(),
+        'date': date,
+        'time': time,
+        'reason': reason,
+        'description': description,
+        'detected_value': value,
+        'suhu': suhu,
+        'gas': gas,
+      });
+      // ignore: avoid_print
+      print('Logged danger event: $reason -> $value at $date $time');
+    } catch (e) {
+      // ignore: avoid_print
+      print('Failed to write danger log: $e');
+    }
     // 1. Notifikasi
     if (fiturNotifikasi) {
       final AndroidNotificationDetails androidDetails =
@@ -265,6 +313,7 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   void dispose() {
+    _savePreferences();
     audioPlayer.dispose();
     super.dispose();
   }
@@ -394,6 +443,104 @@ class _DashboardTabState extends State<DashboardTab> {
                       ),
                       child: const Text("Minta Pendapat AI"),
                     ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // SETTINGS SECTION - ALARM TOGGLES
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Pengaturan Peringatan',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  // Toggle Notifikasi
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.notifications, color: Colors.blue),
+                          const SizedBox(width: 10),
+                          const Text('Notifikasi'),
+                        ],
+                      ),
+                      Switch(
+                        value: fiturNotifikasi,
+                        onChanged: (value) {
+                          setState(() {
+                            fiturNotifikasi = value;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Toggle TTS Robot
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.record_voice_over, color: Colors.purple),
+                          const SizedBox(width: 10),
+                          const Text('Suara Robot'),
+                        ],
+                      ),
+                      Switch(
+                        value: fiturSuaraRobot,
+                        onChanged: (value) {
+                          setState(() {
+                            fiturSuaraRobot = value;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Toggle Siren Audio
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.volume_up, color: Colors.orange),
+                          const SizedBox(width: 10),
+                          const Text('Sirine Audio'),
+                        ],
+                      ),
+                      Switch(
+                        value: fiturAlarmSuara,
+                        onChanged: (value) {
+                          setState(() {
+                            fiturAlarmSuara = value;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
