@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
+import 'dart:typed_data';
 
 // --- LOGS TAB ---
 class HistoryPage extends StatefulWidget {
@@ -39,6 +43,12 @@ class _HistoryPageState extends State<HistoryPage> {
                 label: const Text('Temperature'),
                 selected: _filter == 'temperature',
                 onSelected: (_) => setState(() => _filter = 'temperature'),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Export to PDF',
+                icon: const Icon(Icons.picture_as_pdf),
+                onPressed: _exportLogsToPdf,
               ),
               const Spacer(),
             ],
@@ -103,6 +113,89 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
+  Future<void> _exportLogsToPdf() async {
+    final scaffold = ScaffoldMessenger.of(context);
+    try {
+      // show temporary progress
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final dbSnap = await _logsRef.get();
+      if (!dbSnap.exists || dbSnap.value == null) {
+        Navigator.of(context).pop();
+        scaffold.showSnackBar(const SnackBar(content: Text('No logs to export')));
+        return;
+      }
+
+      final data = dbSnap.value as Map<dynamic, dynamic>;
+      final entries = data.entries.toList();
+      // sort newest first by datetime
+      entries.sort((a, b) {
+        final da = a.value['datetime']?.toString() ?? '';
+        final db = b.value['datetime']?.toString() ?? '';
+        return db.compareTo(da);
+      });
+
+      final pdf = pw.Document();
+
+      // Prepare table data
+      final headers = ['Tanggal', 'Jam', 'Peringatan', 'Suhu', 'Gas'];
+      final List<List<String>> dataRows = entries.map((e) {
+        final item = e.value as Map<dynamic, dynamic>;
+        final date = item['date']?.toString() ?? '';
+        final time = item['time']?.toString() ?? '';
+        final desc = item['description']?.toString() ?? item['reason']?.toString() ?? '';
+        final suhu = item['suhu'] != null && item['suhu'].toString().isNotEmpty ? '${item['suhu'].toString()} C' : '';
+        final gas = item['gas'] != null && item['gas'].toString().isNotEmpty ? '${item['gas'].toString()} PPM' : '';
+        return [date, time, desc, suhu, gas];
+      }).toList();
+
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context ctx) {
+            return [
+              pw.Header(level: 0, child: pw.Text('Dapur Pintar - Logs', style: pw.TextStyle(fontSize: 18))),
+              pw.SizedBox(height: 8),
+              pw.Table.fromTextArray(
+                headers: headers,
+                data: dataRows,
+                headerStyle: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.grey300),
+                cellAlignment: pw.Alignment.centerLeft,
+                cellStyle: pw.TextStyle(fontSize: 11),
+                columnWidths: {
+                  0: const pw.FixedColumnWidth(70), // date
+                  1: const pw.FixedColumnWidth(60), // time
+                  2: const pw.FlexColumnWidth(), // description
+                  3: const pw.FixedColumnWidth(60), // suhu
+                  4: const pw.FixedColumnWidth(70), // gas
+                },
+              ),
+            ];
+          },
+        ),
+      );
+
+      final Uint8List bytes = await pdf.save();
+      Navigator.of(context).pop(); // close progress
+
+      final now = DateTime.now();
+      final filename = 'dapur_logs_${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}.pdf';
+
+      await Printing.sharePdf(bytes: bytes, filename: filename);
+    } catch (e) {
+      Navigator.of(context).pop();
+      final scaffold = ScaffoldMessenger.of(context);
+      scaffold.showSnackBar(SnackBar(content: Text('Failed to export PDF: $e')));
+    }
+  }
+
+  // Removed _buildPdfLogItem: using table layout instead.
+
   Widget _buildLogCard(BuildContext context, Map<dynamic, dynamic> item) {
     final reason = item['reason']?.toString() ?? 'unknown';
     final description = item['description']?.toString() ?? '';
@@ -142,7 +235,24 @@ class _HistoryPageState extends State<HistoryPage> {
           children: [
             const SizedBox(height: 6),
             Text('$date • $time'),
-            const SizedBox(height: 6)
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(badgeText, style: TextStyle(color: badgeColor, fontSize: 12)),
+                ),
+                Text('Value: $detected', style: const TextStyle(fontSize: 12)),
+                Text('S: $suhu', style: const TextStyle(fontSize: 12)),
+                Text('G: $gas', style: const TextStyle(fontSize: 12)),
+              ],
+            ),
           ],
         ),
         isThreeLine: true,
