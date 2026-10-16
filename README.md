@@ -16,7 +16,7 @@ Aplikasi mobile **Flutter** untuk memantau kondisi dapur secara real-time (gas, 
 
 ## Tech stack
 
-Flutter · Dart · Firebase Core + Realtime Database · fl_chart · Google Generative AI (Gemini) · Provider · Flutter TTS · Flutter Local Notifications
+Flutter, Dart, Firebase Core + Realtime Database, fl_chart, Google Generative AI (Gemini), Provider, Flutter TTS, Flutter Local Notifications
 
 ## Struktur data Firebase
 
@@ -43,6 +43,6 @@ flutter run --dart-define=GEMINI_API_KEY=kunci_anda
 - **API key Gemini tidak boleh ditulis di kode.** Gunakan `--dart-define` seperti di atas.
 - Atur **aturan Realtime Database** agar tidak terbuka untuk publik (`.read` / `.write` jangan `true` tanpa syarat).
 
-## Pengembang
+---
 
-**Ardha Febrian Muqorrobin** – WhatsApp 081217529861 · [LinkedIn](https://www.linkedin.com/in/ardha-febrian-342317289/)
+Dibuat oleh Ardha Febrian. Portofolio dan kontak: [asammanis89.github.io](https://asammanis89.github.io), WhatsApp [0857-5517-1491](https://wa.me/6285755171491).
