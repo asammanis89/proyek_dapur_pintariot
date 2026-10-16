@@ -1,16 +1,45 @@
-# flutter_application_1
+# IoT Dapur AI – Monitoring Dapur Pintar (Flutter + Firebase + Gemini)
 
-A new Flutter project.
+Aplikasi mobile **Flutter** untuk memantau kondisi dapur secara real-time (gas, suhu, kelembapan) dari sensor IoT melalui **Firebase Realtime Database**, lengkap dengan **notifikasi**, **suara peringatan berbahasa Indonesia**, dan **analisis singkat dari AI Gemini**.
 
-## Getting Started
+> 📷 Screenshot: tambahkan `docs/dashboard.png` dan `docs/analisis-ai.png`, lalu tampilkan di sini.
 
-This project is a starting point for a Flutter application.
+## Fitur
 
-A few resources to get you started if this is your first Flutter project:
+- Data **real-time** dari sensor: gas (PPM), suhu (°C), kelembapan (%).
+- **Grafik** tren sensor (fl_chart).
+- **Notifikasi lokal** dan **suara (text-to-speech, bahasa Indonesia)** saat kondisi berbahaya.
+- **Asisten AI (Gemini)**: menganalisis data sensor dan memberi saran satu kalimat apakah kondisi aman.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Tech stack
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Flutter · Dart · Firebase Core + Realtime Database · fl_chart · Google Generative AI (Gemini) · Provider · Flutter TTS · Flutter Local Notifications
+
+## Struktur data Firebase
+
+```
+Dapur/
+  Suhu
+  Kelembapan
+  Gas
+```
+
+## Cara menjalankan
+
+1. Buat proyek Firebase dan Realtime Database, lalu tambahkan aplikasi Android. Unduh `google-services.json` ke `android/app/` (file ini tidak disimpan di repo).
+2. Buat API key Gemini di Google AI Studio.
+3. Jalankan:
+
+```bash
+flutter pub get
+flutter run --dart-define=GEMINI_API_KEY=kunci_anda
+```
+
+## Keamanan
+
+- **API key Gemini tidak boleh ditulis di kode.** Gunakan `--dart-define` seperti di atas.
+- Atur **aturan Realtime Database** agar tidak terbuka untuk publik (`.read` / `.write` jangan `true` tanpa syarat).
+
+## Pengembang
+
+**Ardha Febrian Muqorrobin** – WhatsApp 081217529861 · [LinkedIn](https://www.linkedin.com/in/ardha-febrian-342317289/)

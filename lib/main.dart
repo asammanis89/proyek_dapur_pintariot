@@ -11,7 +11,9 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 
 // --- API KEY ---
 // ⚠️ PENTING: Jangan upload API Key ini ke GitHub publik untuk keamanan saldo
-const String geminiApiKey = 'AIzaSyAlU7u6PVkwWu-gImRaVyphTvgjY718Wnc';
+// Kunci API TIDAK disimpan di repo. Jalankan dengan:
+//   flutter run --dart-define=GEMINI_API_KEY=kunci_anda
+const String geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

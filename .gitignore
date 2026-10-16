@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Konfigurasi Firebase & rahasia lokal
+android/app/google-services.json
+.env
