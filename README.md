@@ -1,8 +1,11 @@
+![banner](docs/banner.png)
+
 # IoT Dapur AI – Monitoring Dapur Pintar (Flutter + Firebase + Gemini)
 
 Aplikasi mobile **Flutter** untuk memantau kondisi dapur secara real-time (gas, suhu, kelembapan) dari sensor IoT melalui **Firebase Realtime Database**, lengkap dengan **notifikasi**, **suara peringatan berbahasa Indonesia**, dan **analisis singkat dari AI Gemini**.
 
-> 📷 Screenshot: tambahkan `docs/dashboard.png` dan `docs/analisis-ai.png`, lalu tampilkan di sini.
+![Alur sistem](docs/alur_pintar.png)
+*Alur sistem*
 
 ## Fitur
 
